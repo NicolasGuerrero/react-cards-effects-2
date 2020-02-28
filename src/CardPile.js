@@ -2,24 +2,30 @@ import React, { useState, useEffect, useRef } from 'react';
 import axios from "axios"
 import Card from './Card';
 import { v4 as uuid } from 'uuid';
+import './CardPile.css'
 
 const BASE_URL = 'https://deckofcardsapi.com/api/deck/new/shuffle/?deck_count=1';
 const CARD_URL = 'https://deckofcardsapi.com/api/deck/';
 
+
+
 function CardPile() {
   const [deck, setDeck] = useState(null);
-  const [cards, setCards] = useState([]);
-  const [card, setCard] = useState(null);
+  const [cardsArr, setCardsArr] = useState([]);
   const renderCards = () => {
-    if(cards[0] === undefined) {
+    if(cardsArr[0] === undefined) {
       return;
     }
+    console.log(cardsArr);
+
     return (
       <div className="CardPile-renderCards">
-        {cards.map(card => (
+        {cardsArr.map((card, index) => (
           <Card key={card.id}
             id = {card.id}
             image = {card.image}
+            index = {index}
+            remaining = {card.remaining}
           />
         ))}
       </div>
@@ -29,7 +35,7 @@ function CardPile() {
   const addCard = card => {
     let newCard = { ...card, id: uuid() }
     console.log("newCard", newCard);
-    setCards(oldCards => [...oldCards, newCard]);
+    setCardsArr(oldCards => [...oldCards, newCard]);
   }
 
   useEffect(() => {
@@ -43,22 +49,26 @@ function CardPile() {
   const handleCardDraw = () => { {
     async function fetchCard() {
       const cardResult = await axios.get(`${CARD_URL}${deck.deck_id}/draw/?count=1`);
-      setCard(cardResult.data.cards[0]);
+      if(cardResult.data.error){
+        alert(cardResult.data.error);
+      } else {
+      
+      addCard(cardResult.data.cards[0]);
+      console.log(cardResult.data);
+      }
     };
     fetchCard();
-    console.log(card);
-    addCard(card);
+    
   };
   
 
-    console.log(cards);
   }
 
   return (
     <div>
       <p>{deck ? deck.deck_id : "Loading..."}</p>
       <button onClick={handleCardDraw}>Get a card</button>
-      {cards[0] ? renderCards(): "Loading"}
+      {renderCards()}
     </div>
   )
 };
