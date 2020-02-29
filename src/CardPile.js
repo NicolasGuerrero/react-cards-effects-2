@@ -10,10 +10,24 @@ const CARD_URL = 'https://deckofcardsapi.com/api/deck/';
 function CardPile() {
   const [deck, setDeck] = useState(null);
   const [cardsArr, setCardsArr] = useState([]);
+  const timerId = useRef();
+  const [timer, setTimer] = useState(false);
+
+  const toggleTimer = () => {
+    console.log(timer)
+    let newTimerState;
+    if(timer){
+      newTimerState = false;
+    } else {
+      newTimerState = true;
+    }
+    setTimer(newTimerState)
+  }
+
+
 
   const addCard = card => {
     let newCard = { ...card, id: uuid() }
-    console.log("newCard", newCard);
     setCardsArr(oldCards => [...oldCards, newCard]);
   }
 
@@ -28,25 +42,42 @@ function CardPile() {
     fetchDeck();
   }, []);
 
-  const handleCardDraw = () => {
-    async function fetchCard() {
-      const cardResult = await axios.get(`${CARD_URL}${deck.deck_id}/draw/?count=1`);
-      if (cardResult.data.error) {
-        alert(cardResult.data.error);
-      } else {
+  useEffect(() => {
+    if (timer) {
+      timerId.current = setInterval(() => {
+        handleCardDraw()
+        console.log(timer)
+      }, 200);
+    } else {
+      console.log("GOT HERE!")
+      clearInterval(timerId.current);
 
-        addCard(cardResult.data.cards[0]);
-        console.log(cardResult.data);
-      }
-    };
-    fetchCard();
-  }
+    }
+    const handleCardDraw = () => {
+      async function fetchCard() {
+        const cardResult = await axios.get(`${CARD_URL}${deck.deck_id}/draw/?count=1`);
+        if (cardResult.data.error) {
+          setTimer(false)
+          alert(cardResult.data.error);
+        } else {
+
+          addCard(cardResult.data.cards[0]);
+
+        }
+      };
+      fetchCard();
+    }
+  }, [timer, timerId])
+
+
+
+
 
   const renderCards = () => {
     if (cardsArr[0] === undefined) {
       return null;
     }
-    console.log(cardsArr);
+    
 
     return (
       <div className="CardPile-renderCards">
@@ -62,12 +93,18 @@ function CardPile() {
     );
   };
 
+  const buttonState = () => {
+    if(timer){
+      return "Stop Drawing Cards";
+    }
+    return "Start Drawing Cards";
+  }
 
   // 1. Displays on initial render 
   return (
     <div>
       <p>{deck ? deck.deck_id : "Loading..."}</p>
-      <button onClick={handleCardDraw}>Get a card</button>
+      <button onClick={toggleTimer}>{buttonState()}</button>
       {renderCards()}
     </div>
   )
